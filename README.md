@@ -30,4 +30,4 @@ The techniques used to preprocess the image is by resizing the image into 128 x 
 The model used is CNN, the input size is 128 x 128 with 3 color channel (RGB). Inside it there are also 2 hidden layers. In the last layers, there is a list of nodes which represents the number of labels that exists that the model can understand
 
 ## Results
-[Results](/results.png)
+![Results](https://github.com/steven300900/cnn-model-basic/blob/main/Result.png)
