@@ -5,8 +5,8 @@ import os
 import numpy as np
 
 def process_image(filepath):    
-    width = 512
-    height = 512
+    width = 128
+    height = 128
     image = cv2.imread(filepath)
     imageRescale = cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
     imageRescale = imageRescale.astype(np.float64)
@@ -33,9 +33,9 @@ def get_file():
     return (train_image, train_filename)
 
         
-def create_model(train_image, train_filename):
+def create_model():
     model = tf.keras.models.Sequential()
-    model.add(tf.keras.layers.Conv2D(512, (3, 3), activation='relu', input_shape=(512, 512, 3)))
+    model.add(tf.keras.layers.Conv2D(128, (3, 3), activation='relu', input_shape=(128, 128, 3)))
     model.add(tf.keras.layers.MaxPooling2D((2, 2)))
     model.add(tf.keras.layers.Conv2D(64, (3, 3), activation='relu'))
     model.add(tf.keras.layers.MaxPooling2D((2, 2)))
@@ -50,18 +50,43 @@ def create_model(train_image, train_filename):
     model.compile(optimizer='adam',
                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                 metrics=['accuracy'])
+    return model
 
-    checkpoint_path = "training/cp.ckpt"
+def train_model(model, train_image, train_filename):
+    checkpoint_path = "checkpoint/cp.ckpt"
     checkpoint_dir = os.path.dirname(checkpoint_path)
     
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, verbose=1)
 
-    history = model.fit(train_image, train_filename, epochs=300, callbacks=[checkpoint_callback])
+    history = model.fit(train_image, train_filename, epochs=50, callbacks=[checkpoint_callback])
 
 
-# train_image, train_filename = get_file()
-# train_image = np.array(train_image)
-# print(train_image.shape)
+def test_model(model, mapping):
+    for images_path in os.listdir(os.path.join(os.getcwd(), 'testing')):
+        image = process_image(os.path.join(os.getcwd(), 'testing', images_path))
+        image = np.array(image)
 
-# print(train_filename, train_image)
-# create_model(train_image, train_filename)
+        print(image.shape)
+        result = model.predict(np.expand_dims(image, axis=0))
+        result = np.argmax(result[0])
+        # print(result)
+        cv2.imshow(f"{mapping[result]}", cv2.imread(os.path.join(os.getcwd(), 'testing', images_path)))
+        cv2.waitKey(0)
+
+
+# Create data phase
+train_image, train_filename = get_file()
+train_image = np.array(train_image)
+train_filename = np.array(train_filename)
+print(train_filename, train_image)
+
+# Create model phase
+model = create_model()
+
+# Training model phase
+# train_model(model, train_image, train_filename)
+
+# Testing Phase
+model.load_weights(os.path.join(os.getcwd(), 'checkpoint', 'cp.ckpt'))
+test_model(model, get_file_categories())
+
