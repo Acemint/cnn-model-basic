@@ -4,20 +4,25 @@ import cv2
 import os
 import numpy as np
 
-def process_image(filepath):    
+
+def process_image(filepath, *, color=None):
     width = 128
     height = 128
     image = cv2.imread(filepath)
+    if color != None:   
+        image = cv2.cvtColor(image, color)
     imageRescale = cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
     imageRescale = imageRescale.astype(np.float64)
     imageRescale /= 255
     return imageRescale
+
 
 def get_file_categories():
     train_label_mapping = {}
     for number, folder in enumerate(os.listdir(os.path.join(os.getcwd(), 'training'))):
         train_label_mapping[number] = folder
     return train_label_mapping
+
 
 def get_file():
     train_image = []
@@ -52,26 +57,46 @@ def create_model():
                 metrics=['accuracy'])
     return model
 
+
 def train_model(model, train_image, train_filename):
     checkpoint_path = "checkpoint/cp.ckpt"
     checkpoint_dir = os.path.dirname(checkpoint_path)
     
     checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path, save_weights_only=True, verbose=1)
 
-    history = model.fit(train_image, train_filename, epochs=50, callbacks=[checkpoint_callback])
-
+    history = model.fit(train_image, train_filename, epochs=15, callbacks=[checkpoint_callback])
+        
 
 def test_model(model, mapping):
-    for images_path in os.listdir(os.path.join(os.getcwd(), 'testing')):
-        image = process_image(os.path.join(os.getcwd(), 'testing', images_path))
-        image = np.array(image)
+    images = []
+    results = []
 
-        print(image.shape)
+    images_RGB = []
+    for images_path in os.listdir(os.path.join(os.getcwd(), 'testing')):
+        # get image
+        image = process_image(os.path.join(os.getcwd(), 'testing', images_path))
+        images.append(image)
+        image = np.array(image)
+        
+        # predict the image
         result = model.predict(np.expand_dims(image, axis=0))
         result = np.argmax(result[0])
-        # print(result)
-        cv2.imshow(f"{mapping[result]}", cv2.imread(os.path.join(os.getcwd(), 'testing', images_path)))
-        cv2.waitKey(0)
+        results.append(mapping[result])
+        
+        # get rgb image to display for 
+        imageRGB = process_image(os.path.join(os.getcwd(), 'testing', images_path), color=cv2.COLOR_BGR2RGB)
+        images_RGB.append(imageRGB)
+
+    
+    plt.figure(figsize=(12,12))
+    for i in range(len(images_RGB)):
+        plt.subplot(3,3,i+1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(False)
+        plt.imshow(images_RGB[i])
+        plt.xlabel(results[i])
+    plt.show()
 
 
 # Create data phase
@@ -85,8 +110,9 @@ model = create_model()
 
 # Training model phase
 # train_model(model, train_image, train_filename)
+# model.save('saved_model')
 
 # Testing Phase
 model.load_weights(os.path.join(os.getcwd(), 'checkpoint', 'cp.ckpt'))
+# tf.saved_model.load_(os.path.join(os.getcwd(), 'saved_model'))
 test_model(model, get_file_categories())
-
