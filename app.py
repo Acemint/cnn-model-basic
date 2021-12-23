@@ -111,8 +111,9 @@ model = create_model()
 # Training model phase
 # train_model(model, train_image, train_filename)
 # model.save('saved_model')
+# print("Model saved!")
 
 # Testing Phase
-model.load_weights(os.path.join(os.getcwd(), 'checkpoint', 'cp.ckpt'))
-# tf.saved_model.load_(os.path.join(os.getcwd(), 'saved_model'))
+# model.load_weights(os.path.join(os.getcwd(), 'checkpoint', 'cp.ckpt'))
+model = tf.keras.models.load_model(os.path.join(os.getcwd(), 'saved_model'))
 test_model(model, get_file_categories())
